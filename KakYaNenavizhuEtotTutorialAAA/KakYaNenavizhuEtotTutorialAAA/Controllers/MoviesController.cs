@@ -20,31 +20,50 @@ namespace KakYaNenavizhuEtotTutorialAAA.Controllers
         }
 
         // GET: Movies
-        public async Task<IActionResult> Index(string movieGenre, string searchString)
+        public async Task<IActionResult> Index(string movieGenre, string searchString, string movieRating)
         {
             // Use LINQ to get list of genres.
             IQueryable<string> genreQuery = from m in _context.Movie
                 orderby m.Genre
                 select m.Genre;
-
-            var movies = from m in _context.Movie
-                select m;
-
+            Console.WriteLine("DB Query: " + genreQuery.ToQueryString());
+            IQueryable<string> RatingQuery = from m in _context.Movie
+                orderby m.Rating
+                select m.Rating;
+            Console.WriteLine("DB Query: " + genreQuery.ToQueryString()); 
+            var movies = from m in _context.Movie                          
+                select m;                                                  
+            Console.WriteLine("DB Query: " + movies.ToQueryString());
             if (!string.IsNullOrEmpty(searchString))
             {
                 movies = movies.Where(s => s.Title.Contains(searchString));
+                Console.WriteLine("DB Query: " + movies.ToQueryString());
             }
 
-            if (!string.IsNullOrEmpty(movieGenre))
+            if (!string.IsNullOrEmpty(movieGenre) && string.IsNullOrEmpty(movieRating))
             {
                 movies = movies.Where(x => x.Genre == movieGenre);
+                Console.WriteLine("DB Query: " + movies.ToQueryString());
             }
+            
+            if (!string.IsNullOrEmpty(movieRating) && string.IsNullOrEmpty(movieGenre))                       
+            {                                                            
+                movies = movies.Where(x => x.Rating == movieRating);       
+                Console.WriteLine("DB Query: " + movies.ToQueryString());
+            }
+            if (!string.IsNullOrEmpty(movieRating) && !string.IsNullOrEmpty(movieGenre)) 
+            {                                                                           
+                movies = movies.Where(x => x.Rating == movieRating).Where(x=>x.Genre == movieGenre);                     
+                Console.WriteLine("DB Query: " + movies.ToQueryString());               
+            }                                                                           
 
             var movieGenreVM = new MovieGenreViewModel
             {
                 Genres = new SelectList(await genreQuery.Distinct().ToListAsync()),
+                Rating = new SelectList(await RatingQuery.Distinct().ToListAsync()),
                 Movies = await movies.ToListAsync()
             };
+                                                                                                                            
 
             return View(movieGenreVM);
         }
@@ -59,6 +78,7 @@ namespace KakYaNenavizhuEtotTutorialAAA.Controllers
 
             var movie = await _context.Movie
                 .FirstOrDefaultAsync(m => m.Id == id);
+            Console.WriteLine("DB Query: " + "SELECT DISTINCT ON (Id) * \n FROM [Movie] AS [m] \n WHERE [id] = [Id]");  
             if (movie == null)
             {
                 return NotFound();
@@ -83,6 +103,7 @@ namespace KakYaNenavizhuEtotTutorialAAA.Controllers
             if (ModelState.IsValid)
             {
                 _context.Add(movie);
+                
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
@@ -98,6 +119,7 @@ namespace KakYaNenavizhuEtotTutorialAAA.Controllers
             }
 
             var movie = await _context.Movie.FindAsync(id);
+            Console.WriteLine("DB Query: " + "SELECT * \n FROM [Movie] AS [m] \n WHERE [id] = [Id]");      
             if (movie == null)
             {
                 return NotFound();
@@ -150,6 +172,7 @@ namespace KakYaNenavizhuEtotTutorialAAA.Controllers
 
             var movie = await _context.Movie
                 .FirstOrDefaultAsync(m => m.Id == id);
+            Console.WriteLine("DB Query: " + "SELECT DISTINCT ON (Id) * \n FROM [Movie] AS [m] \n WHERE [id] = [Id]");
             if (movie == null)
             {
                 return NotFound();
@@ -164,13 +187,17 @@ namespace KakYaNenavizhuEtotTutorialAAA.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var movie = await _context.Movie.FindAsync(id);
+            Console.WriteLine("DB Query: " + "SELECT * \n FROM [Movie] AS [m] \n WHERE [id] = [Id]");    
             _context.Movie.Remove(movie);
+            Console.WriteLine("Removing movie. Id = " + movie.Id);
+            
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
         private bool MovieExists(int id)
         {
+            Console.WriteLine("Executing MovieExistsMethod"); 
             return _context.Movie.Any(e => e.Id == id);
         }
     }

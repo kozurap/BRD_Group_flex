@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace KakYaNenavizhuEtotTutorialAAA
 {
@@ -34,6 +35,12 @@ namespace KakYaNenavizhuEtotTutorialAAA
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.Use(async (context, next) =>
+            {
+                Console.WriteLine("Processing request" + context.Request.Path);
+                await next();
+                Console.WriteLine("Request processed, status code:" + context.Response.StatusCode);
+            });
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -60,4 +67,5 @@ namespace KakYaNenavizhuEtotTutorialAAA
             });
         }
     }
+    
 }
